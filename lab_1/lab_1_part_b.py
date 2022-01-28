@@ -10,17 +10,16 @@ y = np.linspace(0,1)
 def f(x, y):
     return x**4 - 6*x**2*y**2 + y**4
 
-nx, ny = (20,20)
+nx, ny = (5,5)
 x = np.linspace(0,1,nx)
-y = np.linspace(0,1,ny)
+y = np.linspace(0,np.pi,ny)
 X,Y = np.meshgrid(x,y)
 Z = np.zeros((nx,ny))
 
-for i in range(nx):
-    for j in range(ny):
-        Z[i,j] = f(X[i,j], Y[i,j])
+Z = f(X,Y)
 
 fig = plt.figure()
+
 ax = fig.add_subplot(111, projection='3d')
 
 surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
