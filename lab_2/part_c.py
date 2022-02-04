@@ -94,11 +94,12 @@ def Jacobi(mesh,tol=0.5e-7,maxit=10000):
     
     # itteration
     for it in range(maxit):
-        u_new[1:-1,1:-1] = C_beta*(mesh.u[:-2,1:-1]+mesh.u[2:,1:-1]+
-                                  beta_sq*(mesh.u[1:-1,:-2]+mesh.u[1:-1,2:]))
+
+        u_new[1:-1,1:-1] = C_beta*(mesh.u[1:-1,:-2]+mesh.u[1:-1,2:]+
+                                  beta_sq*(mesh.u[:-2,1:-1]+mesh.u[2:,1:-1]))
         
         # compute the difference between the new and old solutions
-        err = np.max(mesh.u-u_new)/np.max(mesh.u)
+        err = np.max(abs(mesh.u-u_new))/np.max(mesh.u)
         
         # update the solution
         mesh.u = np.copy(u_new)
@@ -113,6 +114,7 @@ def Jacobi(mesh,tol=0.5e-7,maxit=10000):
     return it+1, err # return the number of itterations and the final residual
 
 iterations, error = Jacobi(mesh)
+print(iterations, error)
 
 # plot the solution
 fig, ax1 = plt.subplots()
@@ -120,6 +122,7 @@ cmap = plt.get_cmap('PiYG')
 cf = ax1.contourf(mesh.x, mesh.y, mesh.u,cmap=cmap)
 fig.colorbar(cf, ax=ax1)
 ax1.set_title(f'Example 9.29 ({mesh.Ni} x {mesh.Nj} grid)')
+
 plt.show()
 
 fig = plt.figure()
