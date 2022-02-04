@@ -24,6 +24,7 @@ ax = fig.add_subplot(111, projection='3d')
 surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,
                        linewidth=0, antialiased=False)
 
+print(np.min(Z), np.max(Z))
 plt.show()
 
 plt.pcolormesh(X,Y,Z)
