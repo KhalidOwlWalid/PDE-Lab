@@ -70,6 +70,7 @@ def lab2(ni,nj):
     mesh.generate()
     # now the RHS boundary condition
     mesh.u[-1,:]=np.sin(np.pi*mesh.x[-1,:])**5
+    print(mesh.u)
     return mesh
 
 ## Write code here to solve the PDE and plot the solution using an appropriate sized grid.  
@@ -95,8 +96,10 @@ def Jacobi(mesh,tol=0.5e-7,maxit=10000):
     # itteration
     for it in range(maxit):
 
-        u_new[1:-1,1:-1] = C_beta*(mesh.u[1:-1,:-2]+mesh.u[1:-1,2:]+
-                                  beta_sq*(mesh.u[:-2,1:-1]+mesh.u[2:,1:-1]))
+        # u_new[1:-1,1:-1] = C_beta*(mesh.u[1:-1,:-2]+mesh.u[1:-1,2:]+
+        #                           beta_sq*(mesh.u[:-2,1:-1]+mesh.u[2:,1:-1]))
+        u_new[1:-1,1:-1] = C_beta*(u_new[1:-1,:-2]+u_new[1:-1,2:]+
+                                  beta_sq*(u_new[:-2,1:-1]+u_new[2:,1:-1]))
         
         # compute the difference between the new and old solutions
         err = np.max(abs(mesh.u-u_new))/np.max(mesh.u)
