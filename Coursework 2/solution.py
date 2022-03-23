@@ -146,7 +146,7 @@ B = np.zeros((inner_domain_size**2,inner_domain_size**2))
 
 inner_size = ni - 2
 A_mat = np.zeros(((inner_size)**2, (inner_size)**2))
-B_mat = np.zeros(((inner_size)**2, (inner_size)**2))
+B_mat = np.zeros((inner_size**2,inner_size**2))
 
 for j in range(0, inner_size):
     for i in range(0, inner_size):
@@ -163,40 +163,46 @@ for j in range(0, inner_size):
 
         # Check if i is at the middle?
         if i > 0 and i < inner_size - 1:
-            A_mat[k,k+1] = 2
-            A_mat[k,k-1] = 2
+            A_mat[k,k+1] = 1
+            A_mat[k,k-1] = 1
 
         # Check if it is at the leftmost?
         elif i == 0:
-            # Set the unknown east value
+            # Set the coefficient of unknown east value
             A_mat[k,k+1] = 2
 
-            if (i,j) not in corners:
-                # Get the west boundary condition and pass it to B_mat
-                pass
-            else:
+            if (i,j) in corners:
                 if k == 0:
                     # Get the north and west BC
-                    pass
+                    # B_mat[k,k] += first_layer[0,1] + first_layer[1,0] 
+                    B_mat[k,k] += 1
+                    
                 else:
                     # Get the south and west BC
-                    pass
+                    # B_mat[k,k] += first_layer[-1,1] + first_layer[-2,0]
+                    B_mat[k,k] += 1
+            else:
+                # B_mat[k,k] += first_layer[j+1,0]
+                B_mat[k,k] += 2    
 
         # Check if it is the rightmost?
         elif i == inner_size - 1:
             A_mat[k, k-1] = 2
 
-            if (i,j) not in corners:
-                # Get the east boundary condition and pass it to B_mat
-                pass
-            else:
+            if (i,j) in corners:
+                # Get the north and east boundary condition and pass it to B_mat
                 # Top right corner
-                if k == inner_size:
-                    # Get the north and east BC
-                    pass
+                if k == inner_size - 1:
+                    # B_mat[k,k] += first_layer[0,-2] + first_layer[1,-1]
+                    B_mat[k,k] += 3
+                # Bottom right corner
                 else:
-                    # Get the south and west BC
-                    pass
+                    # Get south and east boundary
+                    # B_mat[k,k] += first_layer[-1,-2] + first_layer[-2,-1]
+                    B_mat[k,k] += 3
+            else:
+                # B_mat[k,k] += first_layer[j+1,-1]
+                B_mat[k,k] += 4
 
          # Check if i is at the middle (in the y-direction)?
         if j > 0 and j < inner_size - 1:
@@ -209,29 +215,21 @@ for j in range(0, inner_size):
             A_mat[k,k+(ni-2)] = 1
             
             if (i,j) not in corners:
-                # Get the north boundary condition and pass it to B_mat
-                pass
-            else:
-                # Bottom right corner
-                if k == len(A_mat):
-                    # Get the south and east BC
-                    pass
-                else:
-                    # Get the south and west BC
-                    pass
+                # Get the north know boundary condition
+                B_mat[k,k] += 5
 
         elif j == inner_size - 1:
             # Set the north unknown condition
             A_mat[k,k-(ni-2)] = 1
-            # TODO: k + 3 is the known south condition
-
-      
-
+            
+            if (i,j) not in corners:
+                # Get the north know boundary condition
+                B_mat[k,k] += 6
 
 fig, ax = plt.subplots()
-ax.spy(A_mat, precision=0)
+ax.spy(B_mat, precision=0)
 
-print(np.linspace(0,inner_size,inner_size))
+print(np.round(B_mat,3))
 
 plot_grid = np.arange(0,inner_size**2 + 1, 1)
 offset_grid = np.arange(-0.5,inner_size**2 + 1, 1)
@@ -245,7 +243,7 @@ ax.set_yticks(offset_grid, minor=True)
 # ax.yaxis.grid(True, which='major')
 ax.xaxis.grid(True, which='minor')
 ax.yaxis.grid(True, which='minor')
-plt.imshow(A_mat,interpolation='none',cmap='binary')
+plt.imshow(B_mat,interpolation='none',cmap='binary')
 # plt.grid()
 plt.colorbar()
 plt.show()
