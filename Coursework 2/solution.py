@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 
-ni = 5
-nj = 5
+ni = 10
+nj = 10
 
 K = 2
 
@@ -15,10 +15,11 @@ time = np.arange(0,max_t+delta_t,delta_t)
 levels = {}
 
 def set_boundary_condition(grid, t,x,y):
+
     # Top
-    grid[0,:] = random.sample(range(10, 30), ni)
+    grid[0,:] = 0
     # Bottom
-    grid[-1,:] = random.sample(range(10, 30), ni)
+    grid[-1,:] = 0
     # Left
     grid[:,0] = 0.5 * np.cos(y) * np.exp(-K*t)
     # Right 
@@ -69,6 +70,11 @@ for t in time:
 
     levels[t] = mesh.u
 
+prev_layer = Grid(ni,nj)
+prev_layer.set_origin(0,-np.pi/2)
+prev_layer.set_extent(np.pi/2,np.pi/2)
+prev_layer.generate()
+
 # Assemble b matrix
 first_layer = levels[0]
 print(np.round(first_layer,3))
@@ -78,9 +84,11 @@ inner_domain = first_layer[1:-1, 1:-1]
 inner_domain_size = len(first_layer) - 2
 B = np.zeros((inner_domain_size**2,inner_domain_size**2))
 
-
 inner_size = ni - 2
 A_mat = np.zeros(((inner_size)**2, (inner_size)**2))
+
+# Remember that B_mat should be converted to a 1 x inner_size matrix 
+# TODO(Khalid): Use B_mat.diagonal() to extract the B_matrix
 B_mat = np.zeros((inner_size**2,inner_size**2))
 
 for j in range(0, inner_size):
@@ -157,9 +165,9 @@ for j in range(0, inner_size):
                 B_mat[k,k] += first_layer[-1,i+1]
 
 fig, ax = plt.subplots()
-ax.spy(B_mat, precision=0)
+ax.spy(A_mat, precision=0)
 
-print(np.round(B_mat,3))
+print(np.round(A_mat,3))
 
 plot_grid = np.arange(0,inner_size**2 + 1, 1)
 offset_grid = np.arange(-0.5,inner_size**2 + 1, 1)
@@ -173,7 +181,7 @@ ax.set_yticks(offset_grid, minor=True)
 # ax.yaxis.grid(True, which='major')
 ax.xaxis.grid(True, which='minor')
 ax.yaxis.grid(True, which='minor')
-plt.imshow(B_mat,interpolation='none',cmap='binary')
+plt.imshow(A_mat,interpolation='none',cmap='binary')
 # plt.grid()
 plt.colorbar()
 plt.show()
