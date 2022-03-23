@@ -146,89 +146,109 @@ B = np.zeros((inner_domain_size**2,inner_domain_size**2))
 
 inner_size = ni - 2
 A_mat = np.zeros(((inner_size)**2, (inner_size)**2))
+B_mat = np.zeros(((inner_size)**2, (inner_size)**2))
 
 for j in range(0, inner_size):
     for i in range(0, inner_size):
 
+        k = i + (ni - 2) * j
+        A_mat[k,k]=3
+
         top_left_corner = (0,0)
         top_right_corner = ((inner_size - 1),0)
         bottom_left_corner = (0,(inner_size - 1))
-        bottom_right_corner = ((inner_size - 1),(inner_size - 1))
+        bottom_right_corner = ((inner_size - 1,inner_size - 1))
 
         corners = [top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner]
 
-        k = i + (ni - 2) * j
-        A_mat[k,k]=1
-
-        # Left boundary
-        # if i>1:
-        #     A_mat[k,k-1] += 2
         # Check if i is at the middle?
         if i > 0 and i < inner_size - 1:
             A_mat[k,k+1] = 2
             A_mat[k,k-1] = 2
 
         # Check if it is at the leftmost?
-        if i == 0:
+        elif i == 0:
             # Set the unknown east value
             A_mat[k,k+1] = 2
-            # A_mat[k,k+(ni-2)] = 3
-            # A_mat[k,k-(ni-2)] = 3
+
+            if (i,j) not in corners:
+                # Get the west boundary condition and pass it to B_mat
+                pass
+            else:
+                if k == 0:
+                    # Get the north and west BC
+                    pass
+                else:
+                    # Get the south and west BC
+                    pass
 
         # Check if it is the rightmost?
-        if i == inner_size - 1:
+        elif i == inner_size - 1:
             A_mat[k, k-1] = 2
-            # TODO(Khalid): k + 1 is on the right side so this will be on the b matrix 
+
+            if (i,j) not in corners:
+                # Get the east boundary condition and pass it to B_mat
+                pass
+            else:
+                # Top right corner
+                if k == inner_size:
+                    # Get the north and east BC
+                    pass
+                else:
+                    # Get the south and west BC
+                    pass
 
          # Check if i is at the middle (in the y-direction)?
         if j > 0 and j < inner_size - 1:
-            A_mat[k,k+(ni-2)] = 3
-            A_mat[k,k-(ni-2)] = 3
+            A_mat[k,k+(ni-2)] = 1
+            A_mat[k,k-(ni-2)] = 1
 
         # Check if it is at the topmost?
-        if j == 0:
+        elif j == 0:
             # Set the south unknown condition
-            A_mat[k,k+(ni-2)] = 3
-            # TODO: k - 3 is the known north condition
+            A_mat[k,k+(ni-2)] = 1
+            
+            if (i,j) not in corners:
+                # Get the north boundary condition and pass it to B_mat
+                pass
+            else:
+                # Bottom right corner
+                if k == len(A_mat):
+                    # Get the south and east BC
+                    pass
+                else:
+                    # Get the south and west BC
+                    pass
 
-        if j == inner_size - 1:
+        elif j == inner_size - 1:
             # Set the north unknown condition
-            A_mat[k,k-(ni-2)] = 3
+            A_mat[k,k-(ni-2)] = 1
             # TODO: k + 3 is the known south condition
 
-        # # Check if it is the rightmost?
-        # if i == inner_size - 1:
-        #     A_mat[k, k-1] = 2
-        #     # TODO(Khalid): k + 1 is on the right side so this will be on the b matrix 
+      
 
-        # else:
-        #     b_vec[k] += -R_x*grid.u[j,i-1]
 
-        # # Right boundary
-        # if i<grid.Ni-2:
-        #     A_mat[k,k+1] +=R_x
-        # elif (grid.BC[1] == grid.NEUMANN_BC):
-        #     A_mat[k,k-1] += R_x
-        # else:
-        #     b_vec[k] += -R_x*grid.u[j,i+1]
-        
-        # # Bottom boundary
-        # if j>1:
-        #     A_mat[k,k-(grid.Ni-2)] += R_y
-        # elif (grid.BC[3]== grid.NEUMANN_BC):
-        #     A_mat[k,k+(grid.Ni-2)] += R_y
-        # else:
-        #     b_vec[k] += -R_y*grid.u[j-1,i]
+fig, ax = plt.subplots()
+ax.spy(A_mat, precision=0)
 
-        # # South boundary
-        # if j<grid.Nj-2:
-        #     A_mat[k,k+(grid.Ni-2)] += R_y
-        # elif (grid.BC[2]== grid.NEUMANN_BC):
-        #     A_mat[k,k-(grid.Ni-2)] += R_y
-        # else:
-        #     b_vec[k] += -R_y*grid.u[j+1,i]
+print(np.linspace(0,inner_size,inner_size))
 
-print(A_mat)
+plot_grid = np.arange(0,inner_size**2 + 1, 1)
+offset_grid = np.arange(-0.5,inner_size**2 + 1, 1)
+
+ax.set_xticks(plot_grid, minor=False)
+ax.set_yticks(plot_grid, minor=False)
+ax.set_xticks(offset_grid, minor=True)
+ax.set_yticks(offset_grid, minor=True)
+
+# ax.set_yticks(np.linspace(0,inner_size**2,1))
+# ax.yaxis.grid(True, which='major')
+ax.xaxis.grid(True, which='minor')
+ax.yaxis.grid(True, which='minor')
+plt.imshow(A_mat,interpolation='none',cmap='binary')
+# plt.grid()
+plt.colorbar()
+plt.show()
 
 # mat_b = initialize_b_matrix(inner_domain)
 
