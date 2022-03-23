@@ -15,6 +15,7 @@ time = np.arange(0,max_t+delta_t,delta_t)
 levels = {}
 
 def set_boundary_condition(grid, t,x,y):
+    # Top
     grid[0,:] = random.sample(range(10, 30), ni)
     # Bottom
     grid[-1,:] = random.sample(range(10, 30), ni)
@@ -68,9 +69,6 @@ for t in time:
 
     levels[t] = mesh.u
 
-# for i, level in enumerate(levels):
-#     print(np.round(levels[level],3))
-
 # Assemble b matrix
 first_layer = levels[0]
 print(np.round(first_layer,3))
@@ -111,16 +109,13 @@ for j in range(0, inner_size):
             if (i,j) in corners:
                 if k == 0:
                     # Get the north and west BC
-                    # B_mat[k,k] += first_layer[0,1] + first_layer[1,0] 
-                    B_mat[k,k] += 1
+                    B_mat[k,k] += first_layer[0,1] + first_layer[1,0] 
                     
                 else:
                     # Get the south and west BC
-                    # B_mat[k,k] += first_layer[-1,1] + first_layer[-2,0]
-                    B_mat[k,k] += 1
+                    B_mat[k,k] += first_layer[-1,1] + first_layer[-2,0]
             else:
-                # B_mat[k,k] += first_layer[j+1,0]
-                B_mat[k,k] += 2    
+                B_mat[k,k] += first_layer[j+1,0]
 
         # Check if it is the rightmost?
         elif i == inner_size - 1:
@@ -130,18 +125,15 @@ for j in range(0, inner_size):
                 # Get the north and east boundary condition and pass it to B_mat
                 # Top right corner
                 if k == inner_size - 1:
-                    # B_mat[k,k] += first_layer[0,-2] + first_layer[1,-1]
-                    B_mat[k,k] += 3
+                    B_mat[k,k] += first_layer[0,-2] + first_layer[1,-1]
                 # Bottom right corner
                 else:
                     # Get south and east boundary
-                    # B_mat[k,k] += first_layer[-1,-2] + first_layer[-2,-1]
-                    B_mat[k,k] += 3
+                    B_mat[k,k] += first_layer[-1,-2] + first_layer[-2,-1]
             else:
-                # B_mat[k,k] += first_layer[j+1,-1]
-                B_mat[k,k] += 4
+                B_mat[k,k] += first_layer[j+1,-1]
 
-         # Check if i is at the middle (in the y-direction)?
+         # Check if j is at the middle (in the y-direction)?
         if j > 0 and j < inner_size - 1:
             A_mat[k,k+(ni-2)] = 1
             A_mat[k,k-(ni-2)] = 1
@@ -152,16 +144,17 @@ for j in range(0, inner_size):
             A_mat[k,k+(ni-2)] = 1
             
             if (i,j) not in corners:
-                # Get the north know boundary condition
-                B_mat[k,k] += 5
+                # Get the north known boundary condition
+                B_mat[k,k] += first_layer[0,i+1]
 
+        # Check if it is at the bottom most?
         elif j == inner_size - 1:
             # Set the north unknown condition
             A_mat[k,k-(ni-2)] = 1
             
             if (i,j) not in corners:
-                # Get the north know boundary condition
-                B_mat[k,k] += 6
+                # Get the south known boundary condition
+                B_mat[k,k] += first_layer[-1,i+1]
 
 fig, ax = plt.subplots()
 ax.spy(B_mat, precision=0)
