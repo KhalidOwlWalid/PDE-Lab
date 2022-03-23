@@ -81,69 +81,6 @@ inner_domain_size = len(first_layer) - 2
 B = np.zeros((inner_domain_size**2,inner_domain_size**2))
 
 
-# for j, row in enumerate(inner_domain):
-#     for i, col in enumerate(row):
-#         k = i + (nj -2) * j
-
-#         # For checking corners
-#         top_left_corner = (0,0)
-#         top_right_corner = ((len(row) - 1),0)
-#         bottom_left_corner = (0,(len(row) - 1))
-#         bottom_right_corner = ((len(row) - 1),(len(row) - 1))
-
-#         corner = [top_left_corner, top_right_corner, bottom_left_corner, bottom_right_corner]
-
-#         # Top left corner
-#         if (i,j) == top_left_corner:
-#             # Get north
-#             north = first_layer[0,1]
-#             # Get west
-#             west = first_layer[1,0]
-#             B[k,k] = 100
-
-#         # Top right corner
-#         if (i,j) == top_right_corner:
-#             # Get north
-#             north = first_layer[0,-2]
-#             # Get east
-#             east = first_layer[1,-1]
-#             B[k,k] = 100
-
-#         # Bottom left corner
-#         if (i,j) == bottom_left_corner:
-#             # Get west
-#             west = first_layer[-2,0]
-#             # Get south
-#             south = first_layer[-1,1]
-#             B[k,k] = 100
-
-#         # Bottom right corner
-#         if (i,j) == bottom_right_corner:
-#             # Get east
-#             east = first_layer[-2,-1]
-#             # Get south
-#             south = first_layer[-1,-2]
-#             B[k,k] = 100
-        
-
-#         # Checks the side
-#         elif i == 0 and (i,j) not in corner:
-#             # Get west 
-#             west = first_layer[j+1,0]
-
-#         elif i == (len(row) - 1) and (i,j) not in corner:
-#             # Get east
-#             east = first_layer[j+1,-1]
-        
-#         elif j == 0  and (i,j) not in corner:
-#             # Get north
-#             north = first_layer[0,i+1]
-#             print(north)
-
-#         elif j == (len(row) - 1)  and (i,j) not in corner:
-#             # Get south
-#             south = first_layer[-1,i+1]
-
 inner_size = ni - 2
 A_mat = np.zeros(((inner_size)**2, (inner_size)**2))
 B_mat = np.zeros((inner_size**2,inner_size**2))
