@@ -169,16 +169,15 @@ for j in range(0, inner_size):
             A_mat[k,k-1] = 2
 
         # Check if it is at the leftmost?
-        if i == 0 and (i,j) not in corners:
+        if i == 0:
+            # Set the unknown east value
             A_mat[k,k+1] = 2
-            A_mat[k,k+(ni-2)] = 3
-            A_mat[k,k-(ni-2)] = 3
+            # A_mat[k,k+(ni-2)] = 3
+            # A_mat[k,k-(ni-2)] = 3
 
         # Check if it is the rightmost?
-        if i == inner_size - 1 and (i,j) not in corners:
+        if i == inner_size - 1:
             A_mat[k, k-1] = 2
-            A_mat[k,k+(ni-2)] = 3
-            A_mat[k,k-(ni-2)] = 3
             # TODO(Khalid): k + 1 is on the right side so this will be on the b matrix 
 
          # Check if i is at the middle (in the y-direction)?
@@ -187,17 +186,13 @@ for j in range(0, inner_size):
             A_mat[k,k-(ni-2)] = 3
 
         # Check if it is at the topmost?
-        if j == 0 and (i,j) not in corners:
+        if j == 0:
             # Set the south unknown condition
-            A_mat[k,k+1] = 2
-            A_mat[k,k-1] = 2
             A_mat[k,k+(ni-2)] = 3
             # TODO: k - 3 is the known north condition
 
-        if j == inner_size - 1 and (i,j) not in corners:
+        if j == inner_size - 1:
             # Set the north unknown condition
-            A_mat[k,k+1] = 2
-            A_mat[k,k-1] = 2
             A_mat[k,k-(ni-2)] = 3
             # TODO: k + 3 is the known south condition
 
