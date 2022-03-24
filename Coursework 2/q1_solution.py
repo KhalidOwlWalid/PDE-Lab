@@ -13,7 +13,7 @@ def u(x,t,n):
 t_max = 1
 lines = 10
 x = np.linspace(0,0.5*np.pi,acc)
-t = np.linspace(0,t_max,lines)
+t = np.linspace(0.5,t_max,lines)
 R = np.linspace(0,1,lines)
 B = np.linspace(1,0,lines)
 G = 0

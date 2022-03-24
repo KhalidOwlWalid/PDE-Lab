@@ -1,0 +1,15 @@
+Pseudocode
+
+1. Initialize the first layer and second layer
+2. Initialize the boundary conditions and initial conditions for the first layer
+
+for loop depends on time
+    3. Initialize the boundary conditions for second layer since it depends on time
+    4. Instantiate the matrix for A and B for second layer
+    5. Get the b matrix from the first layer
+    6. Update the B matrix to include the b matrix from the 2nd layer
+    7. Solve for AT = B where T is temperature (variable)
+    8. Unpack solution into second layer
+    9. Second layer is now updated to first layer
+    10. Reset second layer 
+    

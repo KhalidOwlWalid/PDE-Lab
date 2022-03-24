@@ -5,16 +5,6 @@ import matplotlib.pyplot as plt
 from numpy.linalg import solve
 import scipy.sparse.linalg as LA
 
-N = 20
-
-ni = N
-nj = N
-
-t = 0
-dt = 0.0625
-
-quiet = False
-
 def set_boundary_condition(u_grid, t,x,y, K=2):
     # Top
     u_grid[0,:] = 0
@@ -36,7 +26,7 @@ def plot_solution(x,y,u):
     fig.colorbar(cf, ax=ax)
     plt.show()
 
-def spy_matrix(matrix, inner_grid_size):
+def spy_matrix(matrix, inner_grid_size, quiet=True):
 
     if inner_grid_size > 10:
         print("Matrix too large to view")
@@ -65,7 +55,7 @@ def spy_matrix(matrix, inner_grid_size):
 
     plt.show()
 
-def initialize_matrix(cur_layer,inner_grid_size):
+def initialize_matrix(ni,nj,cur_layer,inner_grid_size,a,b,c):
 
     A_mat = np.zeros(((inner_grid_size)**2, (inner_grid_size)**2))
 
@@ -77,7 +67,7 @@ def initialize_matrix(cur_layer,inner_grid_size):
         for i in range(0, inner_grid_size):
 
             k = i + (ni - 2) * j
-            A_mat[k,k]=3
+            A_mat[k,k] += c
 
             top_left_corner = (0,0)
             top_right_corner = ((inner_grid_size - 1),0)
@@ -88,82 +78,86 @@ def initialize_matrix(cur_layer,inner_grid_size):
 
             # Check if i is at the middle?
             if i > 0 and i < inner_grid_size - 1:
-                A_mat[k,k+1] = 1
-                A_mat[k,k-1] = 1
+                #  Set the coefficient of unknown west value
+                A_mat[k,k+1] += b
+                A_mat[k,k-1] += b
 
             # Check if it is at the leftmost?
             elif i == 0:
-                # Set the coefficient of unknown east value
-                A_mat[k,k+1] = 2
+                # Set the coefficient of unknown west value
+                A_mat[k,k+1] += b
 
                 if (i,j) in corners:
                     if k == 0:
                         # Get the north and west BC
-                        B_mat[k,k] += cur_layer[0,1] + cur_layer[1,0] 
+                        B_mat[k,k] += -a * cur_layer[0,1] - b * cur_layer[1,0] 
                         
                     else:
                         # Get the south and west BC
-                        B_mat[k,k] += cur_layer[-1,1] + cur_layer[-2,0]
+                        B_mat[k,k] += -a * cur_layer[-1,1] - b * cur_layer[-2,0]
                 else:
-                    B_mat[k,k] += cur_layer[j+1,0]
+                    B_mat[k,k] += -b * cur_layer[j+1,0]
 
             # Check if it is the rightmost?
             elif i == inner_grid_size - 1:
-                A_mat[k, k-1] = 2
+                #  Set the coefficient of unknown east value
+                A_mat[k, k-1] += b
 
                 if (i,j) in corners:
                     # Get the north and east boundary condition and pass it to B_mat
                     # Top right corner
                     if k == inner_grid_size - 1:
-                        B_mat[k,k] += cur_layer[0,-2] + cur_layer[1,-1]
+                        B_mat[k,k] += -a * cur_layer[0,-2] -b * cur_layer[1,-1]
                     # Bottom right corner
                     else:
                         # Get south and east boundary
-                        B_mat[k,k] += cur_layer[-1,-2] + cur_layer[-2,-1]
+                        B_mat[k,k] += -a * cur_layer[-1,-2] - b * cur_layer[-2,-1]
                 else:
-                    B_mat[k,k] += cur_layer[j+1,-1]
+                    B_mat[k,k] += -b * cur_layer[j+1,-1]
 
             # Check if j is at the middle (in the y-direction)?
             if j > 0 and j < inner_grid_size - 1:
-                A_mat[k,k+(ni-2)] = 1
-                A_mat[k,k-(ni-2)] = 1
+                #  Set the coefficient of unknown north value
+                A_mat[k,k+(ni-2)] += a
+                A_mat[k,k-(ni-2)] += a
 
             # Check if it is at the topmost?
             elif j == 0:
-                # Set the south unknown condition
-                A_mat[k,k+(ni-2)] = 1
+                #  Set the coefficient of unknown south value
+                A_mat[k,k+(ni-2)] += a
                 
                 if (i,j) not in corners:
                     # Get the north known boundary condition
-                    B_mat[k,k] += cur_layer[0,i+1]
+                    B_mat[k,k] += -a * cur_layer[0,i+1]
 
             # Check if it is at the bottom most?
             elif j == inner_grid_size - 1:
-                # Set the north unknown condition
-                A_mat[k,k-(ni-2)] = 1
+                #  Set the coefficient of unknown south value
+                A_mat[k,k-(ni-2)] += a
                 
                 if (i,j) not in corners:
                     # Get the south known boundary condition
-                    B_mat[k,k] += cur_layer[-1,i+1]
+                    B_mat[k,k] += -a * cur_layer[-1,i+1]
 
     # In later stage, please return B_mat.diagonal()
     return A_mat, B_mat
 
-def get_b_mat(prev_layer,inner_grid_size):
+def get_b_mat(prev_layer,inner_grid_size,r_x, r_y):
     
     b_mat = np.zeros((inner_grid_size**2, inner_grid_size**2))
 
     for j in range(1, inner_grid_size+1):
-        # Offset it by 1 to point to inner grid row
-
-        # the i here will overlap the i value so please be careful
         for i in range(1, inner_grid_size+1):
-            # Offset it by 1 to point to inner grid column
-            # Why j = 1? Because we already offset it on the for loop above so it cannot be 0 anymore
-
             # Get all values
             # Format : b_mat[k,k] += origin + north + south + east + west
-            sum = prev_layer[j,i] + prev_layer[j-1,i] + prev_layer[j+1,i] + prev_layer[j,i+1]  + prev_layer[j,i-1] 
+            origin = prev_layer[j,i]
+            north = prev_layer[j-1,i]
+            south = prev_layer[j+1,i]
+            east = prev_layer[j,i+1]
+            west = prev_layer[j,i-1] 
+
+            sum = origin + r_x/2 * (east - 2 * origin + west) + r_y/2 * (south - 2 * origin + north)
+            # sum = prev_layer[j,i] + prev_layer[j-1,i] + prev_layer[j+1,i] + prev_layer[j,i+1]  + prev_layer[j,i-1] 
 
             m = i - 1
             n = j - 1
@@ -174,7 +168,7 @@ def get_b_mat(prev_layer,inner_grid_size):
 
     return b_mat
 
-def reset_layer(new_cur_layer,t):
+def reset_layer(ni,nj,new_cur_layer,t):
     new_cur_layer = Grid(ni,nj)
     new_cur_layer.set_origin(0,-np.pi/2)
     new_cur_layer.set_extent(np.pi/2,np.pi/2)
@@ -185,60 +179,87 @@ def reset_layer(new_cur_layer,t):
 
     return new_cur_layer
 
+def main(N,t_max,dt, quiet=False):
+    ni = N
+    nj = N
 
-first_layer = Grid(ni,nj)
-first_layer.set_origin(0,-np.pi/2)
-first_layer.set_extent(np.pi/2,np.pi/2)
-first_layer.generate()
+    t = 0
 
-second_layer = Grid(ni,nj)
-second_layer.set_origin(0,-np.pi/2)
-second_layer.set_extent(np.pi/2,np.pi/2)
-second_layer.generate()
+    # Initialize layers
+    first_layer = Grid(ni,nj)
+    first_layer.set_origin(0,-np.pi/2)
+    first_layer.set_extent(np.pi/2,np.pi/2)
+    first_layer.generate()
 
-# Set the initial condition of the first layer
-set_boundary_condition(first_layer.u, 0, first_layer.x[0,:], first_layer.y[:,0])
-set_boundary_condition(second_layer.u, t + dt, second_layer.x[0,:], second_layer.y[:,0])
-set_initial_condition(first_layer.u, first_layer.x[1:-1,1:-1], first_layer.y[1:-1,1:-1])
+    print(np.round(first_layer.x,3))
+    print(np.round(first_layer.y,3))
 
-# Initialize A and B matrix using the second layer
-A_mat, B_mat = initialize_matrix(second_layer.u,N-2)
-b_mat = get_b_mat(first_layer.u, N-2)
-updated_B_mat = B_mat + b_mat
+    second_layer = Grid(ni,nj)
+    second_layer.set_origin(0,-np.pi/2)
+    second_layer.set_extent(np.pi/2,np.pi/2)
+    second_layer.generate()
 
-b_vec = updated_B_mat.diagonal()
+    # Set the initial condition of the first layer
+    set_boundary_condition(first_layer.u, 0, first_layer.x[0,:], first_layer.y[:,0])
+    set_boundary_condition(second_layer.u, t + dt, second_layer.x[0,:], second_layer.y[:,0])
+    set_initial_condition(first_layer.u, first_layer.x[1:-1,1:-1], first_layer.y[1:-1,1:-1])
 
-x_vec, info = LA.bicgstab(A_mat,b_vec,tol=0.5e-12)
+    # Calculate coefficients
+    dx = first_layer.Delta_x()
+    dy = first_layer.Delta_y()
 
-if info==0:
-    # unpack x_vec into u
-    for j in range(1, second_layer.Nj-1):
-        for i in range(1, second_layer.Ni-1):
-            k = (i-1) + (second_layer.Ni-2)*(j-1)
-            second_layer.u[j,i]=x_vec[k]
+    K = 2
 
-# Update the second layer as the first layer now
-first_layer.u = second_layer.u
-second_layer = reset_layer(second_layer,0.0625*2)
+    R_x = K*dt/dx**2
+    R_y = K*dt/dy**2
 
-A_mat, B_mat = initialize_matrix(second_layer.u,N-2)
-b_mat = get_b_mat(first_layer.u, N-2)
-updated_B_mat = B_mat + b_mat
+    a = -0.5*R_y
+    b = -0.5*R_x
+    c = 1 + R_x + R_y
 
-b_vec = updated_B_mat.diagonal()
+    # Initialize A and B matrix using the second layer
+    A_mat, B_mat = initialize_matrix(ni,nj,second_layer.u,N-2,a,b,c)
+    b_mat = get_b_mat(first_layer.u, N-2, R_x, R_y)
 
-x_vec, info = LA.bicgstab(A_mat,b_vec,tol=0.5e-12)
+    spy_matrix(A_mat, N-2)
 
-if info==0:
-    # unpack x_vec into u
-    for j in range(1, second_layer.Nj-1):
-        for i in range(1, second_layer.Ni-1):
-            k = (i-1) + (second_layer.Ni-2)*(j-1)
-            second_layer.u[j,i]=x_vec[k]
+    updated_B_mat = B_mat + b_mat
 
-# Create new layer for t = t1 + 0.0625
+    b_vec = updated_B_mat.diagonal()
 
-if not quiet:
-    plot_solution(first_layer.x, first_layer.y, first_layer.u)
-    plot_solution(second_layer.x, second_layer.y, second_layer.u)
+    x_vec, info = LA.bicgstab(A_mat,b_vec,tol=0.5e-12)
 
+    if info==0:
+        # unpack x_vec into u
+        for j in range(1, second_layer.Nj-1):
+            for i in range(1, second_layer.Ni-1):
+                k = (i-1) + (second_layer.Ni-2)*(j-1)
+                second_layer.u[j,i]=x_vec[k]
+
+    steps = int(t_max/dt)
+    t_end = dt * steps
+
+    if not quiet:
+        for i, t in enumerate(np.arange(dt,t_end + dt,dt)):
+            print(t)
+            # Update the second layer as the first layer now
+            first_layer.u = second_layer.u
+            second_layer = reset_layer(ni,nj,second_layer,t)
+
+            A_mat, B_mat = initialize_matrix(ni,nj,second_layer.u,N-2,a,b,c)
+            b_mat = get_b_mat(first_layer.u, N-2, R_x, R_y)
+            updated_B_mat = B_mat + b_mat
+
+            b_vec = updated_B_mat.diagonal()
+
+            x_vec, info = LA.bicgstab(A_mat,b_vec,tol=0.5e-12)
+
+            if info==0:
+                # unpack x_vec into u
+                for j in range(1, second_layer.Nj-1):
+                    for i in range(1, second_layer.Ni-1):
+                        k = (i-1) + (second_layer.Ni-2)*(j-1)
+                        second_layer.u[j,i]=x_vec[k]
+        plot_solution(second_layer.x, second_layer.y, second_layer.u)
+
+main(41,2,0.003,False)

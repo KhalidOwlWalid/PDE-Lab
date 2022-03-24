@@ -55,7 +55,7 @@ def set_initial_conditions(first_layer, function):
 
 def assemble_b_matrix(level):
     pass
-
+        
 
 # Initialize the grid with layers of time
 u = np.zeros((len(t), len(x), len(y)))
