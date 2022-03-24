@@ -12,7 +12,9 @@ from mpl_toolkits import mplot3d
 class CrankNicholson(Grid):
 
     def __init__(self):
-        pass
+        
+        self.K = 2
+        self.t_max = 2
 
     def set_boundary_condition(self,u_grid, t,x,y, K=2):
         # Top
@@ -28,20 +30,21 @@ class CrankNicholson(Grid):
         first_layer[1:-1,1:-1] = 0.5 * np.cos(x) * np.cos(y)
         return first_layer
 
-    def plot_solution(self,x,y,u):
-        fig, ax = plt.subplots()
-        cmap = plt.get_cmap('jet')
-        cf = ax.contourf(x,y, u, cmap=cmap, levels = 21)
-        fig.colorbar(cf, ax=ax)
-        plt.show()
+    def plot_solution(self,x,y,u,plot3d=False):
 
-    def plot_3d_solution(self,x,y,u):
-        fig = plt.figure()
-        ax = plt.axes(projection='3d')
-        ax.contour3D(x, y, u, 50, cmap='binary')
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('u')
+        if plot3d:
+            ax = plt.axes(projection='3d')
+            ax.contour3D(x, y, u, 50, cmap='binary')
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.set_zlabel('u')
+
+        else:
+            fig, ax = plt.subplots()
+            cmap = plt.get_cmap('jet')
+            cf = ax.contourf(x,y, u, cmap=cmap, levels = 21)
+            fig.colorbar(cf, ax=ax)
+
         plt.show()
 
     def spy_matrix(self,matrix, inner_grid_size, quiet=True):
@@ -200,6 +203,11 @@ class CrankNicholson(Grid):
         return new_cur_layer
 
     def main(self,N,t_max,dt, quiet=False, plot3d=False):
+
+        clock_start = time.time()
+
+        assert N % 2 != 0, "N should be odd"
+
         ni = N
         nj = N
 
@@ -210,9 +218,6 @@ class CrankNicholson(Grid):
         first_layer.set_origin(0,-np.pi/2)
         first_layer.set_extent(np.pi/2,np.pi/2)
         first_layer.generate()
-
-        print(np.round(first_layer.x,3))
-        print(np.round(first_layer.y,3))
 
         second_layer = Grid(ni,nj)
         second_layer.set_origin(0,-np.pi/2)
@@ -228,10 +233,8 @@ class CrankNicholson(Grid):
         dx = first_layer.Delta_x()
         dy = first_layer.Delta_y()
 
-        K = 2
-
-        R_x = K*dt/dx**2
-        R_y = K*dt/dy**2
+        R_x = self.K*dt/dx**2
+        R_y = self.K*dt/dy**2
 
         a = -0.5*R_y
         b = -0.5*R_x
@@ -255,7 +258,7 @@ class CrankNicholson(Grid):
                     k = (i-1) + (second_layer.Ni-2)*(j-1)
                     second_layer.u[j,i]=x_vec[k]
 
-        steps = int(t_max/dt)
+        steps = int(self.t_max/dt)
         t_end = dt * steps
 
         if not quiet:
@@ -280,14 +283,65 @@ class CrankNicholson(Grid):
                         for i in range(1, second_layer.Ni-1):
                             k = (i-1) + (second_layer.Ni-2)*(j-1)
                             second_layer.u[j,i]=x_vec[k]
+
+        clock_end = time.time()
+
+        time_taken = clock_end - clock_start
             
-            if plot3d:
-                self.plot_3d_solution(second_layer.x, second_layer.y, second_layer.u)
+        return second_layer.x, second_layer.y, second_layer.u, np.round(time_taken,2)
 
-            else:
-                self.plot_solution(second_layer.x, second_layer.y, second_layer.u)
+    def analytical_solution(self,x,repetition=5):
 
+        summ = 0
+        for n in range (1, repetition):
+            value = 1/(2*self.K*np.pi)*((-1)**n/(n**3)*(1-np.exp(-4*self.K*n**2*self.t_max))*np.sin(2*n*x))
+            summ += value
+        summ += 2*x*self.t_max/np.pi + 0.5 * np.cos(x) * np.exp(-self.K*self.t_max)
+
+        return summ
+
+    def grid_converged_solution(self,N,x_grid,u_grid):
+
+        mid = int((N+1)/2)
+        
+        numerical_soln = u_grid[mid-1]
+        analytical_soln = self.analytical_solution(x_grid[N-1],10)
+
+        # self.print_grid(numerical_soln,6)
+        # self.print_grid(analytical_soln,6)
+
+        diff = abs(numerical_soln - analytical_soln)
+
+        self.print_grid(diff,3)
+        accuracy = sum(diff)/len(diff)
+
+        return accuracy
+
+    def print_grid(self,grid,sig_fig=3):
+        print(np.round(grid,sig_fig))
 
 if __name__ == "__main__":
+
     crank_nicholson = CrankNicholson()
-    crank_nicholson.main(N=8,t_max=2,dt=0.003,quiet=False,plot3d=False)   
+
+
+    N = [21,41,61]
+    
+    result = {}
+    for grid_size in N:
+        print(f"Running for grid size {grid_size}...")
+        x_grid, y_grid, u_grid, time_taken = crank_nicholson.main(N=grid_size,t_max=0.25,dt=0.003,quiet=False,plot3d=False)   
+
+        # crank_nicholson.plot_solution(x_grid, y_grid, u_grid, plot3d=True)
+        converged_soln = crank_nicholson.grid_converged_solution(grid_size,x_grid,u_grid)
+
+        # Store the solution
+        result[grid_size] = [np.round(u_grid,3), time_taken, converged_soln] 
+
+        print(f"Time taken to solve {time_taken}")   
+
+print(result)
+
+
+
+    
