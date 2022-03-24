@@ -7,6 +7,7 @@ from numpy.linalg import solve
 import scipy.sparse.linalg as LA
 import time
 import scipy.sparse as sps
+from mpl_toolkits import mplot3d
 
 class CrankNicholson(Grid):
 
@@ -32,6 +33,15 @@ class CrankNicholson(Grid):
         cmap = plt.get_cmap('jet')
         cf = ax.contourf(x,y, u, cmap=cmap, levels = 21)
         fig.colorbar(cf, ax=ax)
+        plt.show()
+
+    def plot_3d_solution(self,x,y,u):
+        fig = plt.figure()
+        ax = plt.axes(projection='3d')
+        ax.contour3D(x, y, u, 50, cmap='binary')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('u')
         plt.show()
 
     def spy_matrix(self,matrix, inner_grid_size, quiet=True):
@@ -189,7 +199,7 @@ class CrankNicholson(Grid):
 
         return new_cur_layer
 
-    def main(self,N,t_max,dt, quiet=False):
+    def main(self,N,t_max,dt, quiet=False, plot3d=False):
         ni = N
         nj = N
 
@@ -270,9 +280,14 @@ class CrankNicholson(Grid):
                         for i in range(1, second_layer.Ni-1):
                             k = (i-1) + (second_layer.Ni-2)*(j-1)
                             second_layer.u[j,i]=x_vec[k]
-                            
-            self.plot_solution(second_layer.x, second_layer.y, second_layer.u)
+            
+            if plot3d:
+                self.plot_3d_solution(second_layer.x, second_layer.y, second_layer.u)
+
+            else:
+                self.plot_solution(second_layer.x, second_layer.y, second_layer.u)
+
 
 if __name__ == "__main__":
     crank_nicholson = CrankNicholson()
-    crank_nicholson.main(N=8,t_max=3,dt=0.003,quiet=False)   
+    crank_nicholson.main(N=8,t_max=2,dt=0.003,quiet=False,plot3d=False)   
