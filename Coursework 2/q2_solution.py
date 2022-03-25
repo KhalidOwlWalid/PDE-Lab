@@ -8,6 +8,7 @@ import scipy.sparse.linalg as LA
 import time
 import scipy.sparse as sps
 from mpl_toolkits import mplot3d
+from refinement_analysis import refinement_analysis
 
 class CrankNicholson(Grid):
 
@@ -30,7 +31,7 @@ class CrankNicholson(Grid):
         first_layer[1:-1,1:-1] = 0.5 * np.cos(x) * np.cos(y)
         return first_layer
 
-    def plot_solution(self,x,y,u,plot3d=False):
+    def plot_solution(self,ax, x,u,y=None,plot3d=False,plot1d=False):
 
         if plot3d:
             ax = plt.axes(projection='3d')
@@ -39,13 +40,13 @@ class CrankNicholson(Grid):
             ax.set_ylabel('y')
             ax.set_zlabel('u')
 
+        if plot1d:
+            ax.scatter(x,u)
+
         else:
-            fig, ax = plt.subplots()
             cmap = plt.get_cmap('jet')
             cf = ax.contourf(x,y, u, cmap=cmap, levels = 21)
             fig.colorbar(cf, ax=ax)
-
-        plt.show()
 
     def spy_matrix(self,matrix, inner_grid_size, quiet=True):
 
@@ -267,6 +268,7 @@ class CrankNicholson(Grid):
                 first_layer.u = second_layer.u
                 second_layer = self.reset_layer(ni,nj,second_layer,t)
 
+
                 A_mat, B_mat = self.initialize_matrix(ni,nj,second_layer.u,N-2,a,b,c)
                 b_mat = self.get_b_mat(first_layer.u, N-2, R_x, R_y)
                 updated_B_mat = B_mat + b_mat
@@ -288,7 +290,7 @@ class CrankNicholson(Grid):
 
         time_taken = clock_end - clock_start
             
-        return second_layer.x, second_layer.y, second_layer.u, np.round(time_taken,2)
+        return second_layer.x, second_layer.y, second_layer.u, np.round(time_taken,2), dx
 
     def analytical_solution(self,x,repetition=5):
 
@@ -307,12 +309,7 @@ class CrankNicholson(Grid):
         numerical_soln = u_grid[mid-1]
         analytical_soln = self.analytical_solution(x_grid[N-1],10)
 
-        # self.print_grid(numerical_soln,6)
-        # self.print_grid(analytical_soln,6)
-
         diff = abs(numerical_soln - analytical_soln)
-
-        self.print_grid(diff,3)
         accuracy = sum(diff)/len(diff)
 
         return accuracy
@@ -324,24 +321,36 @@ if __name__ == "__main__":
 
     crank_nicholson = CrankNicholson()
 
-
-    N = [21,41,61]
+    N = [5,41,81]
     
     result = {}
+
+    dx_val = []
+    u_val = []
+
     for grid_size in N:
         print(f"Running for grid size {grid_size}...")
-        x_grid, y_grid, u_grid, time_taken = crank_nicholson.main(N=grid_size,t_max=0.25,dt=0.003,quiet=False,plot3d=False)   
+        mid = int((grid_size+1)/2) 
+        x_grid, y_grid, u_grid, time_taken, dx = crank_nicholson.main(N=grid_size,t_max=2,dt=0.0625,quiet=False,plot3d=False)   
 
-        # crank_nicholson.plot_solution(x_grid, y_grid, u_grid, plot3d=True)
         converged_soln = crank_nicholson.grid_converged_solution(grid_size,x_grid,u_grid)
 
         # Store the solution
-        result[grid_size] = [np.round(u_grid,3), time_taken, converged_soln] 
+        result[grid_size] = [x_grid[mid -1], u_grid[mid - 1], time_taken, converged_soln] 
 
         print(f"Time taken to solve {time_taken}")   
 
-print(result)
+        dx_val.append(dx)
+        u_val.append(list(u_grid[mid- 1]))
 
+fig1, ax1 = plt.subplots()
 
+for n, grid_size in enumerate(N):
+    ax1.scatter(result[grid_size][0],result[grid_size][1], label=f'Grid size: {grid_size}')
 
+analytical_soln = crank_nicholson.analytical_solution(result[5][0])
+
+ax1.plot(result[5][0],analytical_soln, color='r', label='Analytical solution')
+plt.legend()
+plt.show()
     
