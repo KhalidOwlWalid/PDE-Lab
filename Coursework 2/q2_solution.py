@@ -9,6 +9,8 @@ import time
 import scipy.sparse as sps
 from mpl_toolkits import mplot3d
 from refinement_analysis import refinement_analysis
+import scipy.integrate as integrate
+
 
 class CrankNicholson(Grid):
 
@@ -298,7 +300,7 @@ class CrankNicholson(Grid):
 
         time_taken = clock_end - clock_start
             
-        return second_layer.x, second_layer.y, second_layer.u, np.round(time_taken,2), dx
+        return second_layer, second_layer.x, second_layer.y, second_layer.u, np.round(time_taken,2), dx
 
     def analytical_solution(self,x,repetition=5):
 
@@ -325,6 +327,21 @@ class CrankNicholson(Grid):
     def print_grid(self,grid,sig_fig=3):
         print(np.round(grid,sig_fig))
 
+    def integrate_u_dx(self,mesh,x0,x1,y):
+        '''Calculate U=\int_{1.0}^{1.95)u(x,0.25) dx  using the
+        u value stored on the grid and simpsons rule'''
+        
+        # find the left and right grid points
+        i0,j = mesh.find((x0,y))
+        i1,j = mesh.find((x1,y))
+
+        # add 1 to i1 as we are going to use it as an upper 
+        # bound forarray slicing
+        i1 = i1 +1
+        
+        # integrate
+        return integrate.simps(mesh.u[j,i0:i1],mesh.x[j,i0:i1])
+
 if __name__ == "__main__":
 
     crank_nicholson = CrankNicholson()
@@ -335,11 +352,21 @@ if __name__ == "__main__":
 
     dx_val = []
     u_val = []
+    run_time = []
+    n_pts =[]
 
-    for grid_size in N:
+    # for grid_index in range(4,1,-1):
+    for grid_index in [7,15,27]:
+
+        ni = 5*2**grid_index + 1
+        nj = 5*2**grid_index + 1
+        n_pts.append(ni*nj)
+
+        grid_size = ni
+
         print(f"Running for grid size {grid_size}...")
         mid = int((grid_size+1)/2) 
-        x_grid, y_grid, u_grid, time_taken, dx = crank_nicholson.main(N=grid_size,t_max=2,v=0.95,quiet=False,plot3d=False)   
+        soln_grid, x_grid, y_grid, u_grid, time_taken, dx = crank_nicholson.main(N=grid_size,t_max=2,v=0.95,quiet=False,plot3d=False)   
 
         converged_soln = crank_nicholson.grid_converged_solution(grid_size,x_grid,u_grid)
 
@@ -349,16 +376,25 @@ if __name__ == "__main__":
         print(f"Time taken to solve {time_taken}")   
 
         dx_val.append(dx)
-        u_val.append(list(u_grid[mid- 1]))
+        u_val.append(crank_nicholson.integrate_u_dx(soln_grid,1.0,1.95,0.25))
+        run_time.append(time_taken)
 
-fig1, ax1 = plt.subplots()
+        print('Integrated value is ',u_val[-1],'\n')
 
-for n, grid_size in enumerate(N):
-    ax1.scatter(result[grid_size][0],result[grid_size][1], label=f'Grid size: {grid_size}')
+from refinement_analysis import refinement_analysis
+# lets to the refinement analysis
+analysis = refinement_analysis(dx_val,u_val)
+print(dx_val)
+print(u_val)
+analysis.report(r'\int_{75}^{125}h(x,25) dx')
+analysis.plot(True,r'$\int_{75}^{125}h(x,25) dx$')
+# fig1, ax1 = plt.subplots()
 
-analytical_soln = crank_nicholson.analytical_solution(result[5][0])
+# for n, grid_size in enumerate(N):
+#     ax1.scatter(result[grid_size][0],result[grid_size][1], label=f'Grid size: {grid_size}')
 
-ax1.plot(result[5][0],analytical_soln, color='r', label='Analytical solution')
-plt.legend()
-plt.show()
-    
+# analytical_soln = crank_nicholson.analytical_solution(result[5][0])
+
+# ax1.plot(result[5][0],analytical_soln, color='r', label='Analytical solution')
+# plt.legend()
+# plt.show()
