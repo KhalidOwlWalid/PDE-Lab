@@ -175,7 +175,7 @@ class CrankNicholson(Grid):
         for j in range(1, inner_grid_size+1):
             for i in range(1, inner_grid_size+1):
                 # Get all values
-                # Format : b_mat[k,k] += origin + north + south + east + west
+                # Format : B_mat[k,k] += origin + north + south + east + west
                 origin = prev_layer[j,i]
                 north = prev_layer[j-1,i]
                 south = prev_layer[j+1,i]
@@ -275,6 +275,7 @@ class CrankNicholson(Grid):
         if not quiet:
             for i, t in enumerate(np.arange(dt,t_end + dt,dt)):
                 # Update the second layer as the first layer now
+                print(f'The grid size is {N} and the time now is {t}')
                 first_layer.u = second_layer.u
                 second_layer = self.reset_layer(ni,nj,second_layer,t)
 
@@ -355,9 +356,9 @@ if __name__ == "__main__":
     run_time = []
     n_pts =[]
 
-    # for grid_index in range(4,1,-1):
-    for grid_index in [7,15,27]:
+    for grid_index in range(3,1,-1):
 
+        # print(grid_index)
         ni = 5*2**grid_index + 1
         nj = 5*2**grid_index + 1
         n_pts.append(ni*nj)
@@ -366,7 +367,7 @@ if __name__ == "__main__":
 
         print(f"Running for grid size {grid_size}...")
         mid = int((grid_size+1)/2) 
-        soln_grid, x_grid, y_grid, u_grid, time_taken, dx = crank_nicholson.main(N=grid_size,t_max=2,v=0.95,quiet=False,plot3d=False)   
+        soln_grid, x_grid, y_grid, u_grid, time_taken, dx = crank_nicholson.main(N=grid_size,t_max=0.05,v=0.95,quiet=False,plot3d=False)   
 
         converged_soln = crank_nicholson.grid_converged_solution(grid_size,x_grid,u_grid)
 
