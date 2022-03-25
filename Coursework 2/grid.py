@@ -35,6 +35,8 @@ class Grid:
         self.BC = [self.DIRICHLET_BC, self.DIRICHLET_BC, 
                    self.DIRICHLET_BC, self.DIRICHLET_BC]
 
+        self.kappa = 2
+
     def set_origin(self,x0,y0):
         self.origin = (x0, y0)
     

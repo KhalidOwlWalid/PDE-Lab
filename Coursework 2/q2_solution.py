@@ -203,12 +203,15 @@ class CrankNicholson(Grid):
 
         return new_cur_layer
 
-    def main(self,N,t_max,dt, quiet=False, plot3d=False):
+    # Courant number of 0.95 is a safe choice
+    def main(self,N,t_max,v=0.95, quiet=False, plot3d=False):
 
         clock_start = time.time()
 
         assert N % 2 != 0, "N should be odd"
+        assert v > 0, "Courant number,v needs to be larger than 0"
 
+        
         ni = N
         nj = N
 
@@ -224,6 +227,11 @@ class CrankNicholson(Grid):
         second_layer.set_origin(0,-np.pi/2)
         second_layer.set_extent(np.pi/2,np.pi/2)
         second_layer.generate()
+
+        dt = v * min(first_layer.Delta_x()**2/(2*first_layer.kappa),
+                    first_layer.Delta_y()**2/(2*first_layer.kappa))
+
+        print(f'The dt for {N} is {dt}')
 
         # Set the initial condition of the first layer
         self.set_boundary_condition(first_layer.u, 0, first_layer.x[0,:], first_layer.y[:,0])
@@ -275,7 +283,7 @@ class CrankNicholson(Grid):
 
                 b_vec = updated_B_mat.diagonal()
 
-                ilu = LA.spilu(A_mat.tocsc(), drop_tol=1e-6, fill_factor=   100)
+                ilu = LA.spilu(A_mat.tocsc(), drop_tol=1e-6, fill_factor=100)
                 M_mat = LA.LinearOperator(A_mat.shape, ilu.solve)
                 x_vec, info = LA.bicgstab(A_mat,b_vec,atol=5e-12,M=M_mat)
 
@@ -321,7 +329,7 @@ if __name__ == "__main__":
 
     crank_nicholson = CrankNicholson()
 
-    N = [5,41,81]
+    N = [5,21,31]
     
     result = {}
 
@@ -331,7 +339,7 @@ if __name__ == "__main__":
     for grid_size in N:
         print(f"Running for grid size {grid_size}...")
         mid = int((grid_size+1)/2) 
-        x_grid, y_grid, u_grid, time_taken, dx = crank_nicholson.main(N=grid_size,t_max=2,dt=0.0625,quiet=False,plot3d=False)   
+        x_grid, y_grid, u_grid, time_taken, dx = crank_nicholson.main(N=grid_size,t_max=2,v=0.95,quiet=False,plot3d=False)   
 
         converged_soln = crank_nicholson.grid_converged_solution(grid_size,x_grid,u_grid)
 
